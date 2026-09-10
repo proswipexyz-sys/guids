@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRIVATE — Docs</title>
+<style>
+  :root{
+    --bg: #0a0a0a;
+    --bg-glow: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(139,0,20,0.18), transparent 60%);
+    --panel: #131111;
+    --panel-border: #332627;
+    --panel-border-hover: #5a2a2e;
+    --text: #ffffff;
+    --text-dim: #c7bcbc;
+    --text-faint: #8f8080;
+    --accent: #e0324a;
+    --accent-soft: rgba(224,50,74,0.14);
+    --sidebar-w: 290px;
+    --header-h: 64px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg-glow), var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Roboto, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  a{ color: inherit; text-decoration: none; }
+
+  /* ---------- Header ---------- */
+  header{
+    height: var(--header-h);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 0 32px;
+    border-bottom: 1px solid var(--panel-border);
+    position: sticky;
+    top:0;
+    background: rgba(10,10,10,0.9);
+    backdrop-filter: blur(10px);
+    z-index: 50;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    font-size:17px;
+    letter-spacing:0.2px;
+  }
+  .brand svg{ width:23px; height:23px; flex-shrink:0; }
+
+  /* ---------- Layout ---------- */
+  .shell{
+    display:flex;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Sidebar ---------- */
+  aside.sidebar{
+    width: var(--sidebar-w);
+    flex-shrink:0;
+    padding: 28px 14px 40px;
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y:auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+  }
+  aside.sidebar::-webkit-scrollbar{ width:6px; }
+  aside.sidebar::-webkit-scrollbar-track{ background:transparent; }
+  aside.sidebar::-webkit-scrollbar-thumb{ background: var(--accent); border-radius:3px; }
+  aside.sidebar::-webkit-scrollbar-thumb:hover{ background:#ff4a63; }
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background: var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    padding:10px 12px;
+    margin: 0 8px 22px;
+    color: var(--text-faint);
+    font-size:14px;
+  }
+  .search-box svg{ width:15px; height:15px; flex-shrink:0; }
+  .nav-group{ margin-bottom: 10px; }
+  .nav-group-title{
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color: var(--text-faint);
+    padding: 14px 18px 6px;
+    font-weight:700;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 11px 18px;
+    margin: 2px 6px;
+    border-radius:8px;
+    font-size:14.5px;
+    color: var(--text-dim);
+    cursor:pointer;
+    border-left:2px solid transparent;
+    transition: background .12s ease, color .12s ease;
+  }
+  .nav-item svg{ width:16px; height:16px; flex-shrink:0; opacity:.85; }
+  .nav-item:hover{ background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active{
+    background: var(--accent-soft);
+    color: var(--text);
+    border-left-color: var(--accent);
+    font-weight:600;
+  }
+
+  /* Collapsible category */
+  .nav-category{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding: 11px 18px;
+    margin: 2px 6px;
+    border-radius:8px;
+    font-size:14.5px;
+    font-weight:600;
+    color: var(--text);
+    cursor:pointer;
+    transition: background .12s ease;
+  }
+  .nav-category:hover{ background: rgba(255,255,255,0.04); }
+  .nav-category .cat-left{ display:flex; align-items:center; gap:10px; }
+  .nav-category svg.cat-icon{ width:16px; height:16px; opacity:.85; }
+  .nav-category svg.chev{ width:14px; height:14px; color: var(--text-faint); transition: transform .2s ease; flex-shrink:0; }
+  .nav-category.open svg.chev{ transform: rotate(180deg); }
+  .nav-subitems{
+    max-height:0;
+    overflow:hidden;
+    transition: max-height .25s ease;
+  }
+  .nav-category.open + .nav-subitems{ max-height: 260px; }
+  .nav-subitems .nav-item{ padding-left: 40px; font-size:14px; }
+
+  /* ---------- Main content ---------- */
+  main{
+    flex:1;
+    min-width:0;
+    padding: 48px 64px 110px;
+  }
+  .doc-page{ display:none; max-width: 860px; }
+  .doc-page.active{ display:block; animation: fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  .eyebrow{
+    font-size:12.5px; color:var(--accent); font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px;
+  }
+  h1.page-title{
+    font-size: 38px; margin:0 0 14px; font-weight:800; letter-spacing:-.01em;
+  }
+  p.page-lead{
+    color: var(--text-dim); font-size:16.5px; line-height:1.75; margin: 0 0 38px;
+  }
+  h2.section-title{
+    font-size:21px; font-weight:700; margin: 38px 0 14px;
+    padding-bottom:9px; border-bottom:1px solid var(--panel-border);
+  }
+  p, li{ color: var(--text-dim); font-size:16px; line-height:1.85; }
+  ol, ul{ padding-left: 22px; margin: 10px 0; }
+  li{ margin-bottom:8px; }
+  li::marker{ color: var(--accent); }
+  code, .inline-code{
+    background: var(--panel); border:1px solid var(--panel-border);
+    padding:2px 7px; border-radius:5px; font-size:14px; color:#ff9aa6;
+    font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  }
+  .code-block{
+    background: var(--panel); border:1px solid var(--panel-border);
+    border-radius:10px; padding:16px 18px; margin: 16px 0;
+    font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+    font-size:14px; color:#e6dede; overflow-x:auto; line-height:1.7;
+    white-space: pre-wrap;
+  }
+  .callout{
+    display:flex; gap:12px;
+    background: var(--panel); border:1px solid var(--panel-border);
+    border-left: 3px solid var(--accent);
+    border-radius:8px; padding:16px 18px; margin: 20px 0;
+    font-size:15px; color: var(--text-dim);
+  }
+  .callout svg{ width:19px; height:19px; flex-shrink:0; color:var(--accent); margin-top:1px; }
+  .callout strong{ color: var(--text); }
+  .callout.warn{ border-left-color:#f0a83a; }
+  .callout.warn svg{ color:#f0a83a; }
+
+  .faq{
+    border:1px solid var(--panel-border); border-radius:10px;
+    overflow:hidden; margin: 20px 0;
+  }
+  .faq-item{ border-bottom:1px solid var(--panel-border); }
+  .faq-item:last-child{ border-bottom:none; }
+  .faq-question{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:16px 18px; background:var(--panel);
+    font-weight:700; font-size:15.5px; color:var(--text); cursor:pointer;
+    transition: background .12s ease;
+  }
+  .faq-question:hover{ background: rgba(255,255,255,0.04); }
+  .faq-question svg{ width:14px; height:14px; color:var(--text-faint); transition: transform .2s ease; flex-shrink:0; }
+  .faq-item.open .faq-question svg{ transform: rotate(180deg); }
+  .faq-answer{ max-height:0; overflow:hidden; transition: max-height .25s ease; background:var(--panel); }
+  .faq-item.open .faq-answer{ max-height: 500px; }
+  .faq-answer-inner{ padding:0 18px 18px; }
+  .faq-answer-inner p{ margin:0 0 12px; }
+  .faq-answer-inner p:last-child{ margin-bottom:0; }
+
+  .card-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin: 18px 0 8px;
+  }
+  .card{
+    background: var(--panel); border:1px solid var(--panel-border);
+    border-radius:10px; padding:16px 18px; transition: border-color .15s ease, transform .15s ease;
+    cursor:pointer;
+  }
+  .card:hover{ border-color: var(--panel-border-hover); transform: translateY(-2px); }
+  .card-title{ font-size:15px; font-weight:700; margin-bottom:5px; display:flex; align-items:center; gap:8px;}
+  .card-title svg{ width:16px; height:16px; color: var(--accent); }
+  .card-desc{ font-size:13.5px; color: var(--text-faint); line-height:1.6; }
+
+  .welcome-emoji{ font-size:44px; margin-bottom:10px; }
+
+  .prev-next{
+    display:flex; justify-content:space-between; margin-top:56px;
+    padding-top:20px; border-top:1px solid var(--panel-border);
+  }
+  .pn-link{ font-size:13px; color: var(--text-faint); }
+  .pn-link .pn-label{ display:block; font-size:11px; margin-bottom:3px; }
+  .pn-link .pn-name{ color: var(--text); font-weight:600; font-size:14.5px; }
+  .pn-link:hover .pn-name{ color: var(--accent); }
+
+  @media (max-width: 900px){
+    aside.sidebar{ display:none; }
+    main{ padding: 28px 20px 80px; }
+    .card-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Brand tabs ---------- */
+  .brand-tabs{
+    display:flex; flex-wrap:wrap; gap:8px; margin: 22px 0 4px;
+  }
+  .brand-tab{
+    background: var(--panel); border:1px solid var(--panel-border);
+    border-radius:8px; padding:9px 16px; font-size:14px; font-weight:600;
+    color: var(--text-dim); cursor:pointer; transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .brand-tab:hover{ border-color: var(--panel-border-hover); color: var(--text); }
+  .brand-tab.active{
+    background: var(--accent-soft); color: var(--text); border-color: var(--accent);
+  }
+  .brand-panel{ display:none; }
+  .brand-panel.active{ display:block; animation: fade .2s ease; }
+  .video-link{
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--panel); border:1px solid var(--panel-border);
+    border-radius:8px; padding:10px 14px; margin-top:8px;
+    font-size:14px; font-weight:600; color: var(--text);
+    transition: border-color .12s ease;
+  }
+  .video-link:hover{ border-color: var(--accent); color: var(--accent); }
+  .video-link svg{ width:16px; height:16px; color: var(--accent); flex-shrink:0; }
+  .video-embed{
+    position:relative; padding-bottom:56.25%; height:0; overflow:hidden;
+    border-radius:10px; border:1px solid var(--panel-border); margin:16px 0; background:var(--panel);
+  }
+  .video-embed iframe{
+    position:absolute; top:0; left:0; width:100%; height:100%; border:0;
+  }
+
+  /* ---------- Scroll reveal ---------- */
+  .reveal{
+    opacity:0;
+    transform: translateY(28px);
+    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1);
+    will-change: opacity, transform;
+  }
+  .reveal.visible{
+    opacity:1;
+    transform:none;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .reveal{ transition:none; opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L21 6.5V13C21 17.5 17.5 21.2 12 22C6.5 21.2 3 17.5 3 13V6.5L12 2Z" stroke="#e0324a" stroke-width="1.6" fill="rgba(224,50,74,0.15)"/><path d="M8.5 12.5L11 15L15.5 9.5" stroke="#e0324a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    PRIVATE
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      ドキュメントを検索…
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">はじめに</div>
+      <div class="nav-item active" data-page="welcome">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 12H3M9 6l-6 6 6 6"/><path d="M14 6h7v12h-7"/></svg>
+        👋 ようこそ！
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-item" data-page="install">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        インストール
+      </div>
+      <div class="nav-item" data-page="disable-defender">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L21 6.5V13C21 17.5 17.5 21.2 12 22C6.5 21.2 3 17.5 3 13V6.5L12 2Z"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></svg>
+        Windows Defenderを無効
+      </div>
+      <div class="nav-item" data-page="clean-install">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="9" rx="1"/><path d="M12 11v7"/><rect x="4" y="18" width="16" height="4" rx="1"/><path d="M12 6h.01"/></svg>
+        クリーンインストール
+      </div>
+      <div class="nav-item" data-page="bios-flash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
+        BIOS FLASH
+      </div>
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- Welcome -->
+    <section class="doc-page active" id="page-welcome">
+      <div class="eyebrow">Docs / はじめに</div>
+      <div class="welcome-emoji">👋</div>
+      <h1 class="page-title">ようこそ！</h1>
+      <p class="page-lead">ドキュメントサイトへようこそ。左のメニューから、目的の項目を選んでください。</p>
+
+      <div class="card-grid">
+        <div class="card" data-goto="install">
+          <div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>インストール</div>
+          <div class="card-desc">必要なソフトのインストール手順はこちら。</div>
+        </div>
+        <div class="card" data-goto="disable-defender">
+          <div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L21 6.5V13C21 17.5 17.5 21.2 12 22C6.5 21.2 3 17.5 3 13V6.5L12 2Z"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></svg>Windows Defenderを無効</div>
+          <div class="card-desc">Defenderの無効化手順はこちら。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- インストール -->
+    <section class="doc-page" id="page-install">
+      <div class="eyebrow">Docs</div>
+      <h1 class="page-title">インストール</h1>
+      <p class="page-lead">必要なソフトを、上から順番に1つずつインストールしてください。焦らず、番号どおりに進めれば大丈夫です。</p>
+
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <div><strong>初めての方へ：</strong> 下の「①→②→③」の順に進めてください。1つ終わってから次に進むのがコツです。</div>
+      </div>
+
+      <h2 class="section-title">① WinRAR（解凍ソフト）をインストール</h2>
+      <p>ダウンロードしたファイルを開くために必要なソフトです。最初に入れておきます。</p>
+      <a class="video-link" href="https://www.winrarjapan.com/download" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        WinRAR をダウンロード
+      </a>
+      <ol>
+        <li>上のボタンをクリックして、WinRARのダウンロードページを開きます。</li>
+        <li>自分のパソコンに合ったもの（ほとんどの方は<strong>64ビット版</strong>）をダウンロードします。</li>
+        <li>ダウンロードしたファイルをダブルクリックして開きます。</li>
+        <li>「インストール」ボタンを押し、そのまま「OK」「完了」を押して終わりです。</li>
+      </ol>
+
+      <h2 class="section-title">② DirectX をインストール</h2>
+      <p>ゲームやツールを動かすために必要な部品です。</p>
+      <a class="video-link" href="https://www.microsoft.com/ja-jp/download/details.aspx?id=35" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        DirectX をダウンロード
+      </a>
+      <ol>
+        <li>上のボタンからページを開き、赤い「ダウンロード」ボタンを押します。</li>
+        <li>ダウンロードしたファイルをダブルクリックして開きます。</li>
+        <li>「同意します」にチェックを入れて「次へ」を押します。</li>
+        <li><strong>「Bing バーをインストールする」のチェックは必ず外して</strong>ください。（不要なソフトが入るのを防ぐためです）</li>
+        <li>そのまま「次へ」「完了」を押してインストールします。</li>
+      </ol>
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <div>「<strong>Bing バーをインストールする</strong>」のチェックを外し忘れないよう注意してください。</div>
+      </div>
+
+      <h2 class="section-title">③ Visual C++ ランタイム（オールインワン）をインストール</h2>
+      <p>ツールを正しく動かすために必要な部品をまとめて入れます。</p>
+      <a class="video-link" href="https://www.techpowerup.com/download/visual-c-redistributable-runtime-package-all-in-one/" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Visual C++ ランタイムをダウンロード
+      </a>
+      <ol>
+        <li>上のボタンからページを開きます。</li>
+        <li>ページの<strong>一番右上にあるファイル</strong>をクリックしてダウンロードします。</li>
+        <li>ダウンロードした<code>.zip</code>ファイルを右クリックし、「ここに展開（解凍）」を選びます。（①で入れたWinRARが使えます）</li>
+        <li>解凍してできたフォルダーを開きます。</li>
+        <li>中にある <code>install_all.bat</code> を<strong>右クリック</strong>し、<strong>「管理者として実行」</strong>を選びます。</li>
+        <li>黒い画面が出て自動で進みます。画面が閉じるまでそのまま待てば完了です。</li>
+      </ol>
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <div>「管理者として実行」を選ばないと正しくインストールされません。必ず<strong>右クリック → 管理者として実行</strong>で行ってください。</div>
+      </div>
+
+      <div class="prev-next">
+        <a class="pn-link" data-goto="welcome"><span class="pn-label">前へ</span><span class="pn-name">← ようこそ！</span></a>
+        <a class="pn-link" data-goto="disable-defender" style="text-align:right;"><span class="pn-label">次へ</span><span class="pn-name">Windows Defenderを無効 →</span></a>
+      </div>
+    </section>
+
+    <!-- Windows Defenderを無効 -->
+    <section class="doc-page" id="page-disable-defender">
+      <div class="eyebrow">Docs</div>
+      <h1 class="page-title">Windows Defenderを無効</h1>
+      <p class="page-lead">次に、Windows Defender（Windows標準のウイルス対策）を無効にします。手順は2段階です。まず「リアルタイム保護」をオフにし、そのあと専用ツールで完全に無効化します。</p>
+
+      <h2 class="section-title">STEP 1　先にリアルタイム保護をオフにする</h2>
+      <p>専用ツールをダウンロードする前に、まずこの設定をオフにしておきます。</p>
+      <ol>
+        <li>スタートメニューを開き、「<strong>Windows セキュリティ</strong>」と入力して開きます。</li>
+        <li>「<strong>ウイルスと脅威の防止</strong>」をクリックします。</li>
+        <li>「ウイルスと脅威の防止の設定」の下にある「<strong>設定の管理</strong>」をクリックします。</li>
+        <li>「<strong>リアルタイム保護</strong>」のスイッチを<strong>オフ</strong>にします。</li>
+        <li>「はい」と聞かれたら「はい」を押します。（あわせて「改ざん防止」もオフにできればオフにしてください）</li>
+      </ol>
+
+      <h2 class="section-title">STEP 2　専用ツールで無効化する</h2>
+      <a class="video-link" href="https://drive.usercontent.google.com/download?id=1jxmKjN820qP_cLZLgbeBi-aP5DUbROle&export=download&authuser=0" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Defender無効化ツールをダウンロード
+      </a>
+      <ol>
+        <li>上のボタンからファイルをダウンロードします。</li>
+        <li>ダウンロードしたファイルを<strong>右クリック</strong>し、「WinRARで展開（解凍）」を選びます。</li>
+        <li>解凍時に<strong>パスワード</strong>を聞かれたら、<code>sordum</code> と入力します。</li>
+        <li>解凍してできたフォルダーを開き、中の <code>.exe</code> ファイルをダブルクリックして起動します。</li>
+        <li>ツールの画面で「<strong>Disable（無効化）</strong>」のボタンを押します。表示が赤（無効）になれば完了です。</li>
+      </ol>
+
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <div>解凍パスワードは <strong>sordum</strong> です。小文字で入力してください。</div>
+      </div>
+
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <div>Defenderがツールを削除しようとする場合は、STEP 1のリアルタイム保護が本当にオフになっているか、もう一度確認してください。</div>
+      </div>
+
+      <div class="prev-next">
+        <a class="pn-link" data-goto="install"><span class="pn-label">前へ</span><span class="pn-name">← インストール</span></a>
+        <a class="pn-link" data-goto="clean-install" style="text-align:right;"><span class="pn-label">次へ</span><span class="pn-name">クリーンインストール →</span></a>
+      </div>
+    </section>
+
+    <!-- クリーンインストール -->
+    <section class="doc-page" id="page-clean-install">
+      <div class="eyebrow">Docs</div>
+      <h1 class="page-title">クリーンインストール</h1>
+      <p class="page-lead">Windowsを最初からきれいに入れ直す手順です。先にUSBメモリを準備してから、本体のインストールに進みます。上から順番に進めれば大丈夫です。</p>
+
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <div>この作業をするとPC内のデータは<strong>すべて消えます</strong>。大事なファイルは先に別の場所へバックアップしてください。</div>
+      </div>
+
+      <h2 class="section-title">STEP 1　USBにインストールデータを入れる</h2>
+      <p>まず使いたいWindowsのISOファイル（またはflash media）を下からダウンロードして、USBメモリに入れます。</p>
+      <a class="video-link" href="https://drive.google.com/file/d/1E6AaAS0eS528Y0OdYuM-46DIep0GOqaA/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Windows 10 v22H2 ja x64.iso
+      </a>
+      <a class="video-link" href="https://drive.google.com/file/d/1x5CyYwP3-OwTrcO7EWFFLYrkZSGEKJr3/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Windows 10 v21H2 ja x64.iso
+      </a>
+      <a class="video-link" href="https://drive.google.com/file/d/11jq28KubydfpWLHkI3NDdbDHizpm-TAm/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Windows 11 v21H2 ja x64.iso
+      </a>
+
+      <h2 class="section-title">STEP 2　RUFUSでUSBを起動可能にする</h2>
+      <p>ダウンロードしたISOを、RUFUSというソフトでUSBに書き込みます。これでUSBから起動できるようになります。やり方は下の動画を見てください。</p>
+      <div class="video-embed">
+        <video controls preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;">
+          <source src="setup.mp4" type="video/mp4">
+          お使いのブラウザは動画の再生に対応していません。
+        </video>
+      </div>
+
+      <h2 class="section-title">STEP 3　インストールを始める</h2>
+      <ol>
+        <li>作成したUSBをPCに差します。</li>
+        <li><strong>設定 ▶ 回復 ▶ 今すぐ再起動</strong> を選びます。</li>
+        <li>「デバイスの使用」からUSBを選びます。</li>
+      </ol>
+
+      <h2 class="section-title">STEP 4　ドライブを完全に消去する</h2>
+      <p>ここでディスクを一度まっさらにします。この作業をする前に<strong>USBを抜いてください</strong>。</p>
+      <ol>
+        <li>USBを抜きます。</li>
+        <li><code>Shift + F10</code> を押してコマンドプロンプト（黒い画面）を起動します。</li>
+        <li>下のコマンドを1行ずつ入力し、それぞれ Enter を押します。</li>
+      </ol>
+      <div class="code-block">diskpart
+list disk
+select disk 0
+clean</div>
+      <ol>
+        <li>コマンドプロンプトを閉じます。</li>
+        <li>インストール画面に戻り、表示されているパーティションを<strong>すべて削除</strong>します。</li>
+        <li>新規で作成し、すべてフォーマットします。</li>
+      </ol>
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <div>diskpart とフォーマットは <strong>USBを必ず抜いた状態</strong>で行ってください。差したままだとUSB側を消してしまうおそれがあります。</div>
+      </div>
+
+      <h2 class="section-title">STEP 5　もう一度インストールする</h2>
+      <p>ドライブを消し終わったら、一度インストールを終了します。そのあとUSBを差し直して、もう一度インストールを最初から進めてください。</p>
+
+      <h2 class="section-title">STEP 6　Windowsセットアップ</h2>
+      <ol>
+        <li>画面の案内に沿ってセットアップを進めます。</li>
+        <li>アカウントを作成する画面で、<strong>有線LANでつないでいる場合はLANケーブルを抜き</strong>、「アカウントの作成」を選びます。</li>
+        <li>そのまま案内どおりに進めれば完了です。</li>
+      </ol>
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <div>ケーブルを抜くのは、Microsoftアカウントの強制ログインを避けてローカルアカウントを作るためです。Wi-Fiの場合は接続しないまま進めてください。</div>
+      </div>
+
+      <div class="prev-next">
+        <a class="pn-link" data-goto="disable-defender"><span class="pn-label">前へ</span><span class="pn-name">← Windows Defenderを無効</span></a>
+        <a class="pn-link" data-goto="bios-flash" style="text-align:right;"><span class="pn-label">次へ</span><span class="pn-name">BIOS FLASH →</span></a>
+      </div>
+    </section>
+
+    <!-- BIOS FLASH -->
+    <section class="doc-page" id="page-bios-flash">
+      <div class="eyebrow">Docs</div>
+      <h1 class="page-title">BIOS FLASH</h1>
+      <p class="page-lead">マザーボードのBIOS（UEFI）を最新版に更新する手順です。メーカーごとにやり方が違うので、下のタブから自分のマザーボードのメーカーを選んでください。</p>
+
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <div>更新中は<strong>絶対に電源を切らないでください</strong>。途中で止まるとマザーボードが起動しなくなることがあります。ノートPCはバッテリー、デスクトップは安定した電源で行ってください。</div>
+      </div>
+
+      <div class="brand-tabs">
+        <div class="brand-tab active" data-brand="asus">ASUS</div>
+        <div class="brand-tab" data-brand="msi">MSI</div>
+        <div class="brand-tab" data-brand="gigabyte">GIGABYTE</div>
+        <div class="brand-tab" data-brand="asrock">ASRock</div>
+      </div>
+
+      <!-- ASUS -->
+      <div class="brand-panel active" id="brand-asus">
+        <h2 class="section-title">ASUS（EZ Flash）</h2>
+        <ol>
+          <li>ASUS公式サイトで自分のマザーボードの型番を検索し、「サポート」→「ドライバーとツール」からBIOSファイルをダウンロードします。</li>
+          <li><code>.zip</code> を解凍し、中の <code>.CAP</code> ファイルをUSBメモリ（FAT32形式）の直下にコピーします。</li>
+          <li>USBを差してPCを起動し、起動直後に <code>Delete</code> または <code>F2</code> を連打してBIOSに入ります。</li>
+          <li>「Advanced Mode（F7）」→「Tool」→「ASUS EZ Flash Utility」を開きます。</li>
+          <li>USB内の <code>.CAP</code> ファイルを選び、更新を実行します。完了後は自動で再起動します。</li>
+        </ol>
+        <div class="callout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <div>CPUが無くても更新できる「BIOS FlashBack」対応ボードなら、専用USBポートに差して背面のFlashBackボタンを押すだけで更新できます。</div>
+        </div>
+      </div>
+
+      <!-- MSI -->
+      <div class="brand-panel" id="brand-msi">
+        <h2 class="section-title">MSI（M-Flash）</h2>
+        <ol>
+          <li>MSI公式サイトで型番を検索し、「サポート」→「BIOS」から最新版をダウンロードします。</li>
+          <li>解凍したファイルをUSBメモリ（FAT32形式）の直下にコピーします。</li>
+          <li>PCを起動し、<code>Delete</code> を連打してBIOSに入ります。</li>
+          <li>画面の「M-FLASH」ボタンを押し、「はい」で再起動します。</li>
+          <li>USB内のBIOSファイルを選び、更新を実行します。完了まで待てば自動で再起動します。</li>
+        </ol>
+        <div class="callout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <div>「Flash BIOS Button」対応ボードは、ファイル名を指定の名前にリネームしてUSBに入れ、背面ボタンを押すだけで更新できます（詳細は各製品マニュアル参照）。</div>
+        </div>
+      </div>
+
+      <!-- GIGABYTE -->
+      <div class="brand-panel" id="brand-gigabyte">
+        <h2 class="section-title">GIGABYTE（Q-Flash）</h2>
+        <ol>
+          <li>GIGABYTE公式サイトで型番を検索し、「サポート」→「BIOS」から最新版をダウンロードします。</li>
+          <li>解凍したファイルをUSBメモリ（FAT32形式）の直下にコピーします。</li>
+          <li>PCを起動し、<code>Delete</code> を連打してBIOSに入ります。</li>
+          <li><code>F8</code> を押すか、画面の「Q-Flash」を選んで起動します。</li>
+          <li>「Update BIOS」→ USB内のファイルを選び、更新を実行します。完了後は自動で再起動します。</li>
+        </ol>
+        <div class="callout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <div>「Q-Flash Plus」対応ボードは、専用ポートにUSBを差してボタンを押すだけでCPUなしでも更新できます。</div>
+        </div>
+      </div>
+
+      <!-- ASRock -->
+      <div class="brand-panel" id="brand-asrock">
+        <h2 class="section-title">ASRock（Instant Flash）</h2>
+        <ol>
+          <li>ASRock公式サイトで型番を検索し、「サポート」→「BIOS」から最新版をダウンロードします。</li>
+          <li>解凍したファイルをUSBメモリ（FAT32形式）の直下にコピーします。</li>
+          <li>PCを起動し、<code>F2</code> または <code>Delete</code> を連打してBIOSに入ります。</li>
+          <li>「Tool」→「Instant Flash」を選びます。USB内のBIOSファイルが自動で検出されます。</li>
+          <li>検出されたファイルを選び、更新を実行します。完了後は自動で再起動します。</li>
+        </ol>
+        <div class="callout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <div>「BIOS Flashback」対応ボードは、背面の専用ポートにUSBを差してボタンを押すだけでCPUなしでも更新できます。</div>
+        </div>
+      </div>
+
+      <div class="prev-next">
+        <a class="pn-link" data-goto="clean-install"><span class="pn-label">前へ</span><span class="pn-name">← クリーンインストール</span></a>
+        <div></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  const clickable = document.querySelectorAll('.nav-item, .nav-category, [data-goto]');
+  const pages = document.querySelectorAll('.doc-page');
+
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+  function setupReveal(page){
+    page.querySelectorAll(':scope > *').forEach((el, i) => {
+      el.classList.add('reveal');
+      el.classList.remove('visible');
+      el.style.transitionDelay = Math.min(i, 6) * 60 + 'ms';
+      revealObserver.observe(el);
+    });
+  }
+
+  pages.forEach(setupReveal);
+
+  function showPage(name){
+    pages.forEach(p => p.classList.toggle('active', p.id === 'page-' + name));
+    document.querySelectorAll('.nav-item, .nav-category').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === name);
+    });
+    const activePage = document.getElementById('page-' + name);
+    if(activePage) setupReveal(activePage);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  clickable.forEach(el => {
+    el.addEventListener('click', (e) => {
+      const target = el.dataset.page || el.dataset.goto;
+      if(!target) return;
+      e.preventDefault();
+      showPage(target);
+    });
+  });
+
+  document.querySelectorAll('.nav-category').forEach(cat => {
+    cat.addEventListener('click', (e) => {
+      cat.classList.toggle('open');
+      if (cat.dataset.page) {
+        e.preventDefault();
+        showPage(cat.dataset.page);
+      }
+    });
+  });
+
+  document.querySelectorAll('.faq-question').forEach(q => {
+    q.addEventListener('click', () => {
+      q.closest('.faq-item').classList.toggle('open');
+    });
+  });
+
+  document.querySelectorAll('.brand-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const brand = tab.dataset.brand;
+      const group = tab.closest('.brand-tabs').parentElement;
+      group.querySelectorAll('.brand-tab').forEach(t => t.classList.toggle('active', t === tab));
+      group.querySelectorAll('.brand-panel').forEach(p => p.classList.toggle('active', p.id === 'brand-' + brand));
+    });
+  });
+</script>
+</body>
+</html>
